@@ -1,4 +1,4 @@
-const { createSecretKey } = require("crypto");
+//const { createSecretKey } = require("crypto");
 const express = require("express");
 const mongoose = require("mongoose");
 const path = require("path");
@@ -8,6 +8,10 @@ const campground = require("./models/campground");
 const ejsMate = require("ejs-mate");
 const catchAsync = require("./utils/catchAsync");
 const ExpressError = require("./utils/ExpressError");
+const Joi = require("joi");
+// const { resourceLimits } = require("worker_threads");
+// const { valid } = require("joi");
+const { campgroundSchema } = require("./schemas.js");
 
 const app = express();
 
@@ -31,6 +35,18 @@ app.set("views", path.join(__dirname, "views"));
 app.use(express.urlencoded({ extended: true }));
 app.use(methodOverride("_method"));
 
+const validateCampground = function (req, res, next) {
+    const { error } = campgroundSchema.validate(req.body);
+    if (error) {
+        const message = error.details
+            .map((element) => element.message)
+            .join(",");
+        throw new ExpressError(message, 400);
+    } else {
+        next();
+    }
+};
+
 app.get("/", function (req, res) {
     res.render("home.ejs");
 });
@@ -49,6 +65,7 @@ app.get("/campgrounds/new", function (req, res) {
 
 app.post(
     "/campgrounds",
+    validateCampground,
     catchAsync(async function (req, res, next) {
         const campground = new Campground(req.body.campground);
         await campground.save();
@@ -75,6 +92,7 @@ app.get(
 
 app.put(
     "/campgrounds/:id",
+    validateCampground,
     catchAsync(async function (req, res) {
         const campground = await Campground.findByIdAndUpdate(req.params.id, {
             ...req.body.campground,
@@ -97,8 +115,11 @@ app.all("*", function (req, res, next) {
 });
 
 app.use(function (err, req, res, next) {
-    const { statusCode = 500, message = "Something went wrong" } = err;
-    res.status(statusCode).send(message);
+    const { statusCode = 500 } = err;
+    if (!err.message) {
+        err.message = "Something went wrong!";
+    }
+    res.status(statusCode).render("error", { err });
 });
 
 app.listen(3000, function () {
