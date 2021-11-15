@@ -9,6 +9,7 @@ const ejsMate = require("ejs-mate");
 const catchAsync = require("./utils/catchAsync");
 const ExpressError = require("./utils/ExpressError");
 const Joi = require("joi");
+const Review = require("./models/review");
 // const { resourceLimits } = require("worker_threads");
 // const { valid } = require("joi");
 const { campgroundSchema } = require("./schemas.js");
@@ -107,6 +108,18 @@ app.delete(
     catchAsync(async function (req, res) {
         await Campground.findByIdAndDelete(req.params.id);
         res.redirect("/campgrounds");
+    })
+);
+
+app.post(
+    "/campgrounds/:id/reviews",
+    catchAsync(async function (req, res) {
+        const campground = await Campground.findById(req.params.id);
+        const review = new Review(req.body.review);
+        campground.reviews.push(review);
+        await review.save();
+        await campground.save();
+        res.redirect(`/campgrounds/${campground._id}`);
     })
 );
 
