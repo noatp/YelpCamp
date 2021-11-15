@@ -12,7 +12,7 @@ const Joi = require("joi");
 const Review = require("./models/review");
 // const { resourceLimits } = require("worker_threads");
 // const { valid } = require("joi");
-const { campgroundSchema } = require("./schemas.js");
+const { campgroundSchema, reviewSchema } = require("./schemas.js");
 
 const app = express();
 
@@ -38,6 +38,18 @@ app.use(methodOverride("_method"));
 
 const validateCampground = function (req, res, next) {
     const { error } = campgroundSchema.validate(req.body);
+    if (error) {
+        const message = error.details
+            .map((element) => element.message)
+            .join(",");
+        throw new ExpressError(message, 400);
+    } else {
+        next();
+    }
+};
+
+const validateReview = function (req, res, next) {
+    const { error } = reviewSchema.validate(req.body);
     if (error) {
         const message = error.details
             .map((element) => element.message)
@@ -113,6 +125,7 @@ app.delete(
 
 app.post(
     "/campgrounds/:id/reviews",
+    validateReview,
     catchAsync(async function (req, res) {
         const campground = await Campground.findById(req.params.id);
         const review = new Review(req.body.review);
