@@ -10,18 +10,31 @@ const {
     validateCampground,
 } = require("../middleware");
 
-router.get("/", catchAsync(campgrounds.index));
+router
+    .route("/")
+    .get(catchAsync(campgrounds.index))
+    .post(
+        isLoggedIn,
+        validateCampground,
+        catchAsync(campgrounds.createCampground)
+    );
 
 router.get("/new", isLoggedIn, campgrounds.renderNewForm);
 
-router.post(
-    "/",
-    isLoggedIn,
-    validateCampground,
-    catchAsync(campgrounds.createCampground)
-);
-
-router.get("/:id", catchAsync(campgrounds.showCampground));
+router
+    .route("/:id")
+    .get(catchAsync(campgrounds.showCampground))
+    .put(
+        isLoggedIn,
+        isAuthorOfCampground,
+        validateCampground,
+        catchAsync(campgrounds.updateCampground)
+    )
+    .delete(
+        isLoggedIn,
+        isAuthorOfCampground,
+        catchAsync(campgrounds.deleteCampground)
+    );
 
 //update by id
 router.get(
@@ -29,22 +42,6 @@ router.get(
     isLoggedIn,
     isAuthorOfCampground,
     catchAsync(campgrounds.renderEditForm)
-);
-
-router.put(
-    "/:id",
-    isLoggedIn,
-    isAuthorOfCampground,
-    validateCampground,
-    catchAsync(campgrounds.updateCampground)
-);
-
-//delete by id
-router.delete(
-    "/:id",
-    isLoggedIn,
-    isAuthorOfCampground,
-    catchAsync(campgrounds.deleteCampground)
 );
 
 module.exports = router;
